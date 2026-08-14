@@ -1,27 +1,49 @@
-name: Build and Test OpenNOW Web
+name: Deploy OpenNOW Web to GitHub Pages
 
 on:
   push:
-    branches: [ main ]
-  pull_request:
-    branches: [ main ]
+    branches:
+      - main # Cambia a 'master' si tu rama principal se llama así
+
+# Permisos requeridos para interactuar con GitHub Pages
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: "pages"
+  cancel-in-progress: true
 
 jobs:
-  build:
+  build-and-deploy:
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
     runs-on: ubuntu-latest
-
     steps:
-      - name: Checkout code
+      - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Set up Node.js
+      - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '22'
+          node-version: 20
           cache: 'npm'
 
       - name: Install dependencies
         run: npm ci
 
-      - name: Build application
+      - name: Build project
         run: npm run build
+        # Nota: Si el comando genera la carpeta "dist", usaremos esa. 
+        # Si genera "build", cambia el parámetro de abajo por "build".
+
+      - name: Upload static assets
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: ./dist # Asegúrate de colocar la carpeta de salida correcta (dist o build)
+
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
